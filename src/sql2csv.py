@@ -9,7 +9,7 @@ import psycopg2.extras
 import psycopg2
 
 
-def get_mysql_connection(host, user, port, password, database, ssl={}):
+def get_mysql_connection(host, user, port, password, database):
     """
         MySQL connection
     """
@@ -21,12 +21,11 @@ def get_mysql_connection(host, user, port, password, database, ssl={}):
                            db=database,
                            charset='utf8mb4',
                            cursorclass=pymysql.cursors.DictCursor,
-                           client_flag=pymysql.constants.CLIENT.MULTI_STATEMENTS,
-                           ssl=ssl
+                           client_flag=pymysql.constants.CLIENT.MULTI_STATEMENTS
                            )
 
 
-def get_pg_connection(host, user, port, password, database, ssl={}):
+def get_pg_connection(host, user, port, password, database):
     """
         PostgreSQL connection
     """
@@ -35,9 +34,19 @@ def get_pg_connection(host, user, port, password, database, ssl={}):
                             user=user,
                             port=port,
                             password=password,
-                            dbname=database,
-                            sslmode=ssl.get('sslmode', None),
-                            sslcert=ssl.get('sslcert', None),
-                            sslkey=ssl.get('sslkey', None),
-                            sslrootcert=ssl.get('sslrootcert', None),
+                            dbname=database
                             )
+
+
+def get_connection(engine, host, user, port, password, database):
+    """
+        Get SQL connection
+    """
+
+    if engine == 'mysql':
+        return get_mysql_connection(host, user, port, password, database)
+    elif engine == 'postgresql':
+        return get_pg_connection(host, user, port, password, database)
+    else:
+        raise RuntimeError(
+            '"%s" engine is not supported.' % (engine))
