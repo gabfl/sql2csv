@@ -30,8 +30,9 @@ class Test(unittest.TestCase):
 
     def get_connection(self, engine):
 
-        db_config = self.db_configs['pg' if engine ==
-                                    'postgresql' else 'mysql']
+        db_config = self.db_configs[
+            'pg' if engine == 'postgresql' else 'mysql'
+        ]
 
         # Get database connection
         return sql2csv.get_connection(
@@ -98,7 +99,7 @@ class Test(unittest.TestCase):
 
     def test_resolve_home_dir(self):
         assert sql2csv.resolve_home_dir('/tmp/file') == '/tmp/file'
-        assert sql2csv.resolve_home_dir('~/file') == '/root/file'
+        assert sql2csv.resolve_home_dir('~/file') == '/home/travis/file'
 
     def test_open_file(self):
         self.assertIsInstance(sql2csv.open_file(
