@@ -153,12 +153,32 @@ class Test(unittest.TestCase):
         for row in sql2csv.run_query(cursor=cursor, query='SELECT generate_series(1, 5);'):
             self.assertIsInstance(row, tuple)
 
-    def test_to_csv_mysql(self):
+    def test_discard_line(self):
+        assert sql2csv.discard_line('+something') is True
+        assert sql2csv.discard_line('(something') is True
+        assert sql2csv.discard_line('-something') is True
+        assert sql2csv.discard_line('') is True
+        assert sql2csv.discard_line('something') is False
+
+    def test_remove_leading_trailing_pipe(self):
+        assert sql2csv.remove_leading_trailing_pipe(
+            '|something|') == 'something'
+        assert sql2csv.remove_leading_trailing_pipe('something') == 'something'
+
+    def test_line_to_tuple(self):
+        assert sql2csv.line_to_tuple(
+            'some|thing|else') == ('some', 'thing', 'else')
+
+    def test_strip_whitespaces(self):
+        assert sql2csv.strip_whitespaces(
+            ('  some  ', '  thing', 'else  ')) == ('some', 'thing', 'else')
+
+    def test_query_to_csv_mysql(self):
         db_config = self.db_configs['mysql']
 
         dest_file = '/tmp/file3'
 
-        sql2csv.to_csv(
+        sql2csv.query_to_csv(
             engine='mysql',
             host=db_config['host'],
             user=db_config['user'],
@@ -179,12 +199,12 @@ class Test(unittest.TestCase):
 3,18,world,2018-12-08 12:17:12
 """
 
-    def test_to_csv_postgresql(self):
+    def test_query_to_csv_postgresql(self):
         db_config = self.db_configs['pg']
 
         dest_file = '/tmp/file4'
 
-        sql2csv.to_csv(
+        sql2csv.query_to_csv(
             engine='postgresql',
             host=db_config['host'],
             user=db_config['user'],

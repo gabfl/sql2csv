@@ -69,6 +69,42 @@ def run_query(cursor, query):
         yield row
 
 
+def discard_line(line):
+    """ Decide whether we should keep or dicard a line """
+
+    if line[:1] in ['', '+', '(', '-']:
+        return True
+
+    return False
+
+
+def remove_leading_trailing_pipe(line):
+    """ Remove optional leading and trailing pipe """
+
+    return line.strip('|')
+
+
+def line_to_tuple(line):
+    """ Split a line by pipe """
+
+    return line.split('|')
+
+
+def strip_whitespaces(tpl):
+    """ Strip white spaces before and after each item """
+
+    return tuple([item.strip() for item in tpl])
+
+
+def stdin_to_csv(in_):
+    for line in in_.splitlines():
+        line = remove_leading_trailing_pipe(line)
+        if not discard_line(line):
+            tupl = line_to_tuple(line)
+            tupl = strip_whitespaces(tupl)
+            print(tupl)
+
+
 def resolve_home_dir(destination):
     """ Resolve `~` to a full path """
 
@@ -94,7 +130,7 @@ def get_writer(file_, delimiter=',', quotechar='"'):
     )
 
 
-def to_csv(engine, host, user, port, password, database, query, destination, delimiter=',', quotechar='"', print_info=1000):
+def query_to_csv(engine, host, user, port, password, database, query, destination, delimiter=',', quotechar='"', print_info=1000):
     """ Run a query and store the result to a CSV file """
 
     # Get SQL connection
@@ -156,7 +192,7 @@ def main():
                         help="CSV quote character", default='"')
     args = parser.parse_args()
 
-    to_csv(
+    query_to_csv(
         engine=args.engine,
         host=args.host,
         user=args.user,
