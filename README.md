@@ -5,13 +5,13 @@
 [![codecov](https://codecov.io/gh/gabfl/sql2csv/branch/master/graph/badge.svg)](https://codecov.io/gh/gabfl/sql2csv)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://raw.githubusercontent.com/gabfl/sql2csv/master/LICENSE)
 
-Run MySQL and PostgreSQL queries and store result in CSV
+Run MySQL and PostgreSQL queries and store the results in CSV.
 
 ## Why sql2csv
 
-`sql2csv` allows to export the result of MySQL and PostgreSQL queries to CSV files.
+`sql2csv` is a small utility to run MySQL and PostgreSQL queries and store the output in a CSV file.
 
-`sql2csv` helps exporting queries result from AWS RDS to CSV.
+In some environments like when using MySQL or Aurora in AWS RDS, exporting queries' results to CSV is not available with native tools. `sql2csv` is a simple module that offers this feature.
 
 ## Installation
 
@@ -19,7 +19,7 @@ Run MySQL and PostgreSQL queries and store result in CSV
 pip3 install sql2csv
 ```
 
-### Example
+## Example
 
 ```bash
 $ sql2csv --engine mysql \
@@ -37,7 +37,7 @@ $ cat export.csv
 3,18,world,2018-12-08 12:17:12
 ```
 
-### Usage
+## Usage
 
 ```bash
 sql2csv --help
