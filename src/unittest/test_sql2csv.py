@@ -219,7 +219,7 @@ class Test(unittest.TestCase):
                 sys.stdout = saved_stdout
 
     def test_stdin_to_csv(self):
-        with patch("sys.stdin", StringIO(""" id | some_int |  some_str   |      some_date 
+        with patch("sys.stdin", StringIO(""" id | some_int |  some_str   |      some_date
 ----+----------+-------------+---------------------
   1 |       12 | hello world | 2018-12-01 12:23:12
   2 |       15 | hello       | 2018-12-05 12:18:12
