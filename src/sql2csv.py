@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import sys
 import csv
+import tempfile
 from os.path import expanduser
 
 import argparse
@@ -8,6 +10,8 @@ import pymysql.cursors
 import pymysql.constants.CLIENT
 import psycopg2.extras
 import psycopg2
+
+file_ = None
 
 
 def get_mysql_connection(host, user, port, password, database):
@@ -84,25 +88,36 @@ def remove_leading_trailing_pipe(line):
     return line.strip('|')
 
 
-def line_to_tuple(line):
+def get_column_separator(input_):
+    """ Return the column separator """
+    """ This logic needs to be improved """
+
+    if input_.count('|') > input_.count('\t'):
+        return '|'
+
+    return '\t'
+
+
+def split_columns(line, separator='\t'):
     """ Split a line by pipe """
 
-    return line.split('|')
+    return line.split(separator)
 
 
 def strip_whitespaces(tpl):
     """ Strip white spaces before and after each item """
 
-    return tuple([item.strip() for item in tpl])
+    return [item.strip() for item in tpl]
 
 
-def stdin_to_csv(in_):
-    for line in in_.splitlines():
-        line = remove_leading_trailing_pipe(line)
-        if not discard_line(line):
-            tupl = line_to_tuple(line)
-            tupl = strip_whitespaces(tupl)
-            print(tupl)
+def has_stdin_input():
+    """ Return `True` if there is an stdin input """
+
+    # if select.select([sys.stdin, ], [], [], 0.0)[0]:
+    if not sys.stdin.isatty():
+        return True
+
+    return False
 
 
 def resolve_home_dir(destination):
@@ -117,7 +132,53 @@ def resolve_home_dir(destination):
 def open_file(destination):
     """ Open file """
 
-    return open(destination, 'w', newline='')
+    global file_
+
+    file_ = open(destination, 'w+', newline='')
+
+    return file_
+
+
+def open_tempfile():
+    """ Open a temporary file """
+
+    global file_
+
+    file_ = tempfile.NamedTemporaryFile('w+', newline='', delete=False)
+
+    return file_
+
+
+def file_to_stdout():
+    """ Print file content to stdout """
+
+    with open(file_.name) as f:
+        print(f.read())
+
+
+def stdin_to_csv(delimiter=',', quotechar='"'):
+    """ Parse stdin and return output in a CSV format """
+
+    # Open CSV
+    with open_tempfile() as file_:
+        writer = get_writer(file_, delimiter=delimiter, quotechar=quotechar)
+
+        # Parse lines and add to file
+        separator = None
+        for line in sys.stdin:
+            # Get column separator
+            separator = get_column_separator(
+                line) if not separator else separator
+
+            line = remove_leading_trailing_pipe(line)
+            if not discard_line(line):
+                row = split_columns(line, separator)
+                row = strip_whitespaces(row)
+
+                # Write row
+                writer.writerow(row)
+
+    file_to_stdout()
 
 
 def get_writer(file_, delimiter=',', quotechar='"'):
@@ -130,7 +191,7 @@ def get_writer(file_, delimiter=',', quotechar='"'):
     )
 
 
-def query_to_csv(engine, host, user, port, password, database, query, destination, delimiter=',', quotechar='"', print_info=1000):
+def query_to_csv(engine, host, user, port, password, database, query, out_type='stdout', destination_file=None, delimiter=',', quotechar='"', print_info=1000):
     """ Run a query and store the result to a CSV file """
 
     # Get SQL connection
@@ -144,30 +205,39 @@ def query_to_csv(engine, host, user, port, password, database, query, destinatio
     )
     cursor = get_cursor(connection)
 
-    print('\n* Exporting rows...')
+    if out_type == 'file':
+        print('\n* Exporting rows...')
 
-    # Open CSV
-    file_ = open_file(resolve_home_dir(destination))
-    writer = get_writer(file_, delimiter=delimiter, quotechar=quotechar)
+    with open_tempfile() if out_type == 'stdout' else open_file(resolve_home_dir(destination_file)) as file_:
+        writer = get_writer(file_, delimiter=delimiter, quotechar=quotechar)
 
-    # Run query and write rows to CSV
-    i = 0
-    for row in run_query(cursor=cursor, query=query):
-        # Increment row counter
-        i += 1
+        # Run query and write rows to CSV
+        i = 0
+        for row in run_query(cursor=cursor, query=query):
+            # Increment row counter
+            i += 1
 
-        if i % print_info == 0:
-            print('  ...%s rows written' % "{:,}".format(i))
+            if out_type == 'file' and i % print_info == 0:
+                print('  ...%s rows written' % "{:,}".format(i))
 
-        writer.writerow(row)
+            writer.writerow(row)
 
-    print('  ...done')
+        if out_type == 'file':
+            print('  ...done')
+            print('* The result has been exported to %s.\n' %
+                  (destination_file))
 
-    print('* The result has been exported to %s.\n' % (destination))
+    # Print stdout
+    if out_type == 'stdout':
+        file_to_stdout()
 
 
 def main():
     """ Parses arguments and run module """
+
+    # Intercept and parse stdin input
+    if has_stdin_input():
+        return stdin_to_csv()
 
     # Parse arguments
     parser = argparse.ArgumentParser()
@@ -177,7 +247,7 @@ def main():
     parser.add_argument("-H", "--host", default="127.0.0.1",
                         help="Database host")
     parser.add_argument("-P", "--port", type=int,
-                        default=3306, help="Database port")
+                        help="Database port")
     parser.add_argument("-u", "--user", required=True, help="Database user")
     parser.add_argument("-p", "--password", default='',
                         help="Database password")
@@ -186,11 +256,25 @@ def main():
     parser.add_argument("-q", "--query", required=True,
                         help="SQL query")
     parser.add_argument("-o", "--out",
-                        help="CSV destination", default='export.csv')
+                        help="CSV destination", choices=['stdout', 'file'],
+                        default='stdout')
+    parser.add_argument("-f", "--destination_file",
+                        help="CSV destination file")
     parser.add_argument("-D", "--delimiter", help="CSV delimiter", default=',')
     parser.add_argument("-Q", "--quotechar",
                         help="CSV quote character", default='"')
     args = parser.parse_args()
+
+    # Set default port
+    if not args.port:
+        if args.engine == 'postgresql':
+            args.port = 5432  # PG default
+        else:
+            args.port = 3306  # MySQL default
+
+    # Force output to file if there is a file
+    if args.destination_file:
+        args.out = 'file'
 
     query_to_csv(
         engine=args.engine,
@@ -200,7 +284,8 @@ def main():
         password=args.password,
         database=args.database,
         query=args.query,
-        destination=args.out,
+        out_type=args.out,
+        destination_file=args.destination_file,
         delimiter=args.delimiter,
         quotechar=args.quotechar
     )

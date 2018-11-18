@@ -1,5 +1,8 @@
 import unittest
 import _io
+import tempfile
+from unittest.mock import patch
+from io import StringIO
 
 import psycopg2
 import pymysql
@@ -105,6 +108,10 @@ class Test(unittest.TestCase):
         self.assertIsInstance(sql2csv.open_file(
             '/tmp/file1'), _io.TextIOWrapper)
 
+    def test_open_tempfile(self):
+        self.assertIsInstance(sql2csv.open_tempfile(),
+                              tempfile._TemporaryFileWrapper)
+
     def test_get_writer(self):
         file_ = sql2csv.open_file('/tmp/file2')
         writer = sql2csv.get_writer(file_)
@@ -165,13 +172,29 @@ class Test(unittest.TestCase):
             '|something|') == 'something'
         assert sql2csv.remove_leading_trailing_pipe('something') == 'something'
 
-    def test_line_to_tuple(self):
-        assert sql2csv.line_to_tuple(
-            'some|thing|else') == ('some', 'thing', 'else')
+    def test_get_column_separator(self):
+        assert(sql2csv.get_column_separator('some|value|is\nseparated')) == '|'
+        assert(sql2csv.get_column_separator(
+            'some\tvalue\tis|separated')) == '\t'
+
+    def test_split_columns(self):
+        assert sql2csv.split_columns(
+            'some\tthing\telse') == ['some', 'thing', 'else']
+
+    def test_split_columns_2(self):
+        assert sql2csv.split_columns(
+            'some|thing|else', separator='|') == ['some', 'thing', 'else']
 
     def test_strip_whitespaces(self):
         assert sql2csv.strip_whitespaces(
-            ('  some  ', '  thing', 'else  ')) == ('some', 'thing', 'else')
+            ['  some  ', '  thing', 'else  ']) == ['some', 'thing', 'else']
+
+    # def test_has_stdin_input(self):
+    #     assert sql2csv.has_stdin_input() is False
+
+    def test_has_stdin_input_2(self):
+        with patch("sys.stdin", StringIO("some input")):
+            assert sql2csv.has_stdin_input() is True
 
     def test_query_to_csv_mysql(self):
         db_config = self.db_configs['mysql']
@@ -186,7 +209,8 @@ class Test(unittest.TestCase):
             password=db_config['password'],
             database=db_config['db'],
             query='SELECT * FROM some_mysql_table',
-            destination=dest_file,
+            out_type='file',
+            destination_file=dest_file,
             print_info=2
         )
 
@@ -212,7 +236,8 @@ class Test(unittest.TestCase):
             password=db_config['password'],
             database=db_config['db'],
             query='SELECT * FROM some_pg_table',
-            destination=dest_file
+            out_type='file',
+            destination_file=dest_file
         )
 
         # Read file
