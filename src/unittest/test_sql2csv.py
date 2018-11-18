@@ -172,8 +172,11 @@ class Test(unittest.TestCase):
         assert sql2csv.strip_whitespaces(
             ['  some  ', '  thing', 'else  ']) == ['some', 'thing', 'else']
 
-    # def test_has_stdin_input(self):
-    #     assert sql2csv.has_stdin_input() is False
+    @patch('sys.stdin.isatty')
+    def test_has_stdin_input(self, mocked):
+        mocked.return_value = True
+
+        assert sql2csv.has_stdin_input() is False
 
     def test_has_stdin_input_2(self):
         with patch("sys.stdin", StringIO("some input")):
