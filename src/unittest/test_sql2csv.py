@@ -270,3 +270,31 @@ class Test(unittest.TestCase):
 2,15,hello,2018-12-05 12:18:12
 3,18,world,2018-12-08 12:17:12
 """
+
+    def test_query_to_csv_stdout(self):
+        db_config = self.db_configs['mysql']
+
+        saved_stdout = sys.stdout
+        try:
+            out = StringIO()
+            sys.stdout = out
+
+            # Render file content to stdout
+            sql2csv.query_to_csv(
+                engine='mysql',
+                host=db_config['host'],
+                user=db_config['user'],
+                port=db_config['port'],
+                password=db_config['password'],
+                database=db_config['db'],
+                query='SELECT * FROM some_mysql_table',
+                out_type='stdout',
+                print_info=2
+            )
+
+            output = out.getvalue().strip()
+            assert output == """1,12,hello world,2018-12-01 12:23:12
+2,15,hello,2018-12-05 12:18:12
+3,18,world,2018-12-08 12:17:12"""
+        finally:
+            sys.stdout = saved_stdout
