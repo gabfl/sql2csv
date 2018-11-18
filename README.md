@@ -17,15 +17,60 @@ In some environments like when using MySQL or Aurora in AWS RDS, exporting queri
 
 ```bash
 pip3 install sql2csv
+
+# Basic usage
+mysql [...] -e "SELECT * FROM table" | sql2csv
+# or
+psql [...] -c "SELECT * FROM table" | sql2csv
 ```
 
 ## Example
+
+### From stdin
+
+For simple queries you can pipe a result directly from `mysql` or `psql` to `sql2csv`.
+
+For more complex queries, it is recommended to use the CLI (see below) to ensure a properly formatted CSV.
+
+```bash
+mysql -U root -p"secret" my_db -e "SELECT * FROM some_mysql_table;" | sql2csv
+
+id,some_int,some_str,some_date
+1,12,hello world,2018-12-01 12:23:12
+2,15,hello,2018-12-05 12:18:12
+3,18,world,2018-12-08 12:17:12
+```
+
+```bash
+psql -U postgres my_db -c "SELECT * FROM some_pg_table" | sql2csv
+
+id,some_int,some_str,some_date
+1,12,hello world,2018-12-01 12:23:12
+2,15,hello,2018-12-05 12:18:12
+3,18,world,2018-12-08 12:17:12
+```
+
+### Using `sql2csv` CLI
+
+#### Output to stdout
+
+```bash
+$ sql2csv --engine mysql \
+  --database my_db --user root --password "secret" \
+  --query "SELECT * FROM some_mysql_table"
+
+1,12,hello world,2018-12-01 12:23:12
+2,15,hello,2018-12-05 12:18:12
+3,18,world,2018-12-08 12:17:12
+```
+
+#### Output saved in a file
 
 ```bash
 $ sql2csv --engine mysql \
   --database my_db --user root --password "secret" \
   --query "SELECT * FROM some_mysql_table" \
-  --out export.csv
+  --out file --destination_file export.csv
 
 # * Exporting rows...
 #   ...done
@@ -40,22 +85,29 @@ $ cat export.csv
 ## Usage
 
 ```bash
-sql2csv --help
 usage: sql2csv [-h] [-e {mysql,postgresql}] [-H HOST] [-P PORT] -u USER
-               [-p PASSWORD] -d DATABASE -q QUERY [-o OUT] [-D DELIMITER]
-               [-Q QUOTECHAR]
+               [-p PASSWORD] -d DATABASE -q QUERY [-o {stdout,file}]
+               [-f DESTINATION_FILE] [-D DELIMITER] [-Q QUOTECHAR]
 
 optional arguments:
   -h, --help            show this help message and exit
   -e {mysql,postgresql}, --engine {mysql,postgresql}
-                                        Database engine
-  -H HOST, --host HOST                  Database host
-  -P PORT, --port PORT                  Database port
-  -u USER, --user USER                  Database user
-  -p PASSWORD, --password PASSWORD      Database password
-  -d DATABASE, --database DATABASE      Database name
-  -q QUERY, --query QUERY               SQL query
-  -o OUT, --out OUT                     CSV destination
-  -D DELIMITER, --delimiter DELIMITER   CSV delimiter
-  -Q QUOTECHAR, --quotechar QUOTECHAR   CSV quote character
+                        Database engine
+  -H HOST, --host HOST  Database host
+  -P PORT, --port PORT  Database port
+  -u USER, --user USER  Database user
+  -p PASSWORD, --password PASSWORD
+                        Database password
+  -d DATABASE, --database DATABASE
+                        Database name
+  -q QUERY, --query QUERY
+                        SQL query
+  -o {stdout,file}, --out {stdout,file}
+                        CSV destination
+  -f DESTINATION_FILE, --destination_file DESTINATION_FILE
+                        CSV destination file
+  -D DELIMITER, --delimiter DELIMITER
+                        CSV delimiter
+  -Q QUOTECHAR, --quotechar QUOTECHAR
+                        CSV quote character
 ```

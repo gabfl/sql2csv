@@ -186,14 +186,15 @@ def stdin_to_csv(delimiter=',', quotechar='"'):
                 # Remove leading and trailing |
                 line = remove_leading_trailing_pipe(line)
 
-                # Split columns with separator
-                row = split_columns(line, separator)
+                if line.strip():
+                    # Split columns with separator
+                    row = split_columns(line, separator)
 
-                # Add to CSV
-                row = strip_whitespaces(row)
+                    # Add to CSV
+                    row = strip_whitespaces(row)
 
-                # Write row
-                writer.writerow(row)
+                    # Write row
+                    writer.writerow(row)
 
     file_to_stdout()
 
@@ -244,11 +245,18 @@ def main():
 
     # Intercept and parse stdin input
     if has_stdin_input():
-        return stdin_to_csv()
+        # Parse arguments
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-D", "--delimiter",
+                            help="CSV delimiter", default=',')
+        parser.add_argument("-Q", "--quotechar",
+                            help="CSV quote character", default='"')
+        args = parser.parse_args()
+
+        return stdin_to_csv(delimiter=args.delimiter, quotechar=args.quotechar)
 
     # Parse arguments
     parser = argparse.ArgumentParser()
-
     parser.add_argument("-e", "--engine", type=str, help="Database engine",
                         choices=['mysql', 'postgresql'], default='mysql')
     parser.add_argument("-H", "--host", default="127.0.0.1",
