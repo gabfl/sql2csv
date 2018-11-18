@@ -148,6 +148,16 @@ def open_tempfile():
     return file_
 
 
+def get_writer(file_, delimiter=',', quotechar='"'):
+    """ Return a writer object """
+
+    return csv.writer(
+        file_,
+        delimiter=delimiter,
+        quotechar=quotechar, quoting=csv.QUOTE_MINIMAL
+    )
+
+
 def file_to_stdout():
     """ Print file content to stdout """
 
@@ -165,29 +175,27 @@ def stdin_to_csv(delimiter=',', quotechar='"'):
         # Parse lines and add to file
         separator = None
         for line in sys.stdin:
-            # Get column separator
-            separator = get_column_separator(
-                line) if not separator else separator
+            # Strip whitespaces
+            line.strip()
 
-            line = remove_leading_trailing_pipe(line)
             if not discard_line(line):
+                # Get column separator
+                separator = get_column_separator(
+                    line) if not separator else separator
+
+                # Remove leading and trailing |
+                line = remove_leading_trailing_pipe(line)
+
+                # Split columns with separator
                 row = split_columns(line, separator)
+
+                # Add to CSV
                 row = strip_whitespaces(row)
 
                 # Write row
                 writer.writerow(row)
 
     file_to_stdout()
-
-
-def get_writer(file_, delimiter=',', quotechar='"'):
-    """ Return a writer object """
-
-    return csv.writer(
-        file_,
-        delimiter=delimiter,
-        quotechar=quotechar, quoting=csv.QUOTE_MINIMAL
-    )
 
 
 def query_to_csv(engine, host, user, port, password, database, query, out_type='stdout', destination_file=None, delimiter=',', quotechar='"', print_info=1000):

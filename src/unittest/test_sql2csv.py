@@ -101,45 +101,6 @@ class Test(unittest.TestCase):
             database=db_config['db']
         )
 
-    def test_resolve_home_dir(self):
-        assert sql2csv.resolve_home_dir('/tmp/file') == '/tmp/file'
-        assert sql2csv.resolve_home_dir('~/file') == '/home/travis/file'
-
-    def test_open_file(self):
-        self.assertIsInstance(sql2csv.open_file(
-            '/tmp/file1'), _io.TextIOWrapper)
-
-    def test_open_tempfile(self):
-        self.assertIsInstance(sql2csv.open_tempfile(),
-                              tempfile._TemporaryFileWrapper)
-
-    def test_file_to_stdout(self):
-        with tempfile.NamedTemporaryFile(mode='w+', newline='') as file_:
-            # Write some dummy content
-            file_.write('some line\n')
-            file_.write('some other line')
-            file_.flush()
-
-            saved_stdout = sys.stdout
-            try:
-                out = StringIO()
-                sys.stdout = out
-
-                # Render file content to stdout
-                sql2csv.file_ = file_
-                sql2csv.file_to_stdout()
-
-                output = out.getvalue().strip()
-                assert output == 'some line\nsome other line'
-            finally:
-                sys.stdout = saved_stdout
-
-    def test_get_writer(self):
-        file_ = sql2csv.open_tempfile()
-        writer = sql2csv.get_writer(file_)
-
-        self.assertIsInstance(writer, object)
-
     def get_cursor_mysql(self):
         # Get database connection
         connection = self.get_connection(
@@ -217,6 +178,69 @@ class Test(unittest.TestCase):
     def test_has_stdin_input_2(self):
         with patch("sys.stdin", StringIO("some input")):
             assert sql2csv.has_stdin_input() is True
+
+    def test_resolve_home_dir(self):
+        assert sql2csv.resolve_home_dir('/tmp/file') == '/tmp/file'
+        assert sql2csv.resolve_home_dir('~/file') == '/home/travis/file'
+
+    def test_open_file(self):
+        self.assertIsInstance(sql2csv.open_file(
+            '/tmp/file1'), _io.TextIOWrapper)
+
+    def test_open_tempfile(self):
+        self.assertIsInstance(sql2csv.open_tempfile(),
+                              tempfile._TemporaryFileWrapper)
+
+    def test_get_writer(self):
+        file_ = sql2csv.open_tempfile()
+        writer = sql2csv.get_writer(file_)
+
+        self.assertIsInstance(writer, object)
+
+    def test_file_to_stdout(self):
+        with tempfile.NamedTemporaryFile(mode='w+', newline='') as file_:
+            # Write some dummy content
+            file_.write('some line\n')
+            file_.write('some other line')
+            file_.flush()
+
+            saved_stdout = sys.stdout
+            try:
+                out = StringIO()
+                sys.stdout = out
+
+                # Render file content to stdout
+                sql2csv.file_ = file_
+                sql2csv.file_to_stdout()
+
+                output = out.getvalue().strip()
+                assert output == 'some line\nsome other line'
+            finally:
+                sys.stdout = saved_stdout
+
+    def test_stdin_to_csv(self):
+        with patch("sys.stdin", StringIO(""" id | some_int |  some_str   |      some_date 
+----+----------+-------------+---------------------
+  1 |       12 | hello world | 2018-12-01 12:23:12
+  2 |       15 | hello       | 2018-12-05 12:18:12
+  3 |       18 | world       | 2018-12-08 12:17:12
+""")):
+            saved_stdout = sys.stdout
+            try:
+                out = StringIO()
+                sys.stdout = out
+
+                # Parse input and render CSV to stdout
+                sql2csv.stdin_to_csv()
+
+                output = out.getvalue().strip()
+                print(output)
+                assert output == """id,some_int,some_str,some_date
+1,12,hello world,2018-12-01 12:23:12
+2,15,hello,2018-12-05 12:18:12
+3,18,world,2018-12-08 12:17:12"""
+            finally:
+                sys.stdout = saved_stdout
 
     def test_query_to_csv_mysql(self):
         db_config = self.db_configs['mysql']
