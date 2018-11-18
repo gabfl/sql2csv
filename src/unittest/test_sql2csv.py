@@ -1,6 +1,7 @@
 import unittest
 import _io
 import tempfile
+import sys
 from unittest.mock import patch
 from io import StringIO
 
@@ -112,8 +113,29 @@ class Test(unittest.TestCase):
         self.assertIsInstance(sql2csv.open_tempfile(),
                               tempfile._TemporaryFileWrapper)
 
+    def test_file_to_stdout(self):
+        with tempfile.NamedTemporaryFile(mode='w+', newline='') as file_:
+            # Write some dummy content
+            file_.write('some line\n')
+            file_.write('some other line')
+            file_.flush()
+
+            saved_stdout = sys.stdout
+            try:
+                out = StringIO()
+                sys.stdout = out
+
+                # Render file content to stdout
+                sql2csv.file_ = file_
+                sql2csv.file_to_stdout()
+
+                output = out.getvalue().strip()
+                assert output == 'some line\nsome other line'
+            finally:
+                sys.stdout = saved_stdout
+
     def test_get_writer(self):
-        file_ = sql2csv.open_file('/tmp/file2')
+        file_ = sql2csv.open_tempfile()
         writer = sql2csv.get_writer(file_)
 
         self.assertIsInstance(writer, object)
@@ -199,7 +221,7 @@ class Test(unittest.TestCase):
     def test_query_to_csv_mysql(self):
         db_config = self.db_configs['mysql']
 
-        dest_file = '/tmp/file3'
+        dest_file = '/tmp/file2'
 
         sql2csv.query_to_csv(
             engine='mysql',
@@ -226,7 +248,7 @@ class Test(unittest.TestCase):
     def test_query_to_csv_postgresql(self):
         db_config = self.db_configs['pg']
 
-        dest_file = '/tmp/file4'
+        dest_file = '/tmp/file2'
 
         sql2csv.query_to_csv(
             engine='postgresql',

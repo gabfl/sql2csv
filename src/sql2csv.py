@@ -113,7 +113,6 @@ def strip_whitespaces(tpl):
 def has_stdin_input():
     """ Return `True` if there is an stdin input """
 
-    # if select.select([sys.stdin, ], [], [], 0.0)[0]:
     if not sys.stdin.isatty():
         return True
 
