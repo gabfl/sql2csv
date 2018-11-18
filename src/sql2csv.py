@@ -94,7 +94,7 @@ def get_writer(file_, delimiter=',', quotechar='"'):
     )
 
 
-def to_csv(engine, host, user, port, password, database, query, destination, delimiter=',', quotechar='"'):
+def to_csv(engine, host, user, port, password, database, query, destination, delimiter=',', quotechar='"', print_info=1000):
     """ Run a query and store the result to a CSV file """
 
     # Get SQL connection
@@ -120,7 +120,7 @@ def to_csv(engine, host, user, port, password, database, query, destination, del
         # Increment row counter
         i += 1
 
-        if i % 100 == 0:
+        if i % print_info == 0:
             print('  ...%s rows written' % "{:,}".format(i))
 
         writer.writerow(row)

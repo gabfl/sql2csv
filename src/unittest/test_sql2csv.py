@@ -166,7 +166,8 @@ class Test(unittest.TestCase):
             password=db_config['password'],
             database=db_config['db'],
             query='SELECT * FROM some_mysql_table',
-            destination=dest_file
+            destination=dest_file,
+            print_info=2
         )
 
         # Read file
