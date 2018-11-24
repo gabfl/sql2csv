@@ -99,7 +99,7 @@ def get_column_separator(input_):
 
 
 def split_columns(line, separator='\t'):
-    """ Split a line by pipe """
+    """ Split a line with a "separator" """
 
     return line.split(separator)
 
@@ -154,7 +154,8 @@ def get_writer(file_, delimiter=',', quotechar='"'):
     return csv.writer(
         file_,
         delimiter=delimiter,
-        quotechar=quotechar, quoting=csv.QUOTE_MINIMAL
+        quotechar=quotechar,
+        quoting=csv.QUOTE_MINIMAL
     )
 
 
