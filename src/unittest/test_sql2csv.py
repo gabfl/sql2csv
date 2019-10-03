@@ -156,7 +156,7 @@ class Test(unittest.TestCase):
         sql2csv.execute_query(
             cursor=cursor, query='SELECT 1 as column1, 2 as column2;')
 
-        assert sql2csv.fetch_headers == ['column1', 'column2']
+        assert sql2csv.fetch_headers() == ['column1', 'column2']
 
     def test_fetch_headers_postgresql(self):
         # Get database connection
@@ -168,7 +168,7 @@ class Test(unittest.TestCase):
         sql2csv.execute_query(
             cursor=cursor, query='SELECT 1 as column1, 2 as column2;')
 
-        assert sql2csv.fetch_headers == ['column1', 'column2']
+        assert sql2csv.fetch_headers() == ['column1', 'column2']
 
     def test_discard_line(self):
         assert sql2csv.discard_line('+something') is True
