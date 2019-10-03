@@ -87,7 +87,7 @@ $ cat export.csv
 ```bash
 usage: sql2csv [-h] [-e {mysql,postgresql}] [-H HOST] [-P PORT] -u USER
                [-p PASSWORD] -d DATABASE -q QUERY [-o {stdout,file}]
-               [-f DESTINATION_FILE] [-D DELIMITER] [-Q QUOTECHAR]
+               [-f DESTINATION_FILE] [-D DELIMITER] [-Q QUOTECHAR] [-t]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -110,4 +110,5 @@ optional arguments:
                         CSV delimiter
   -Q QUOTECHAR, --quotechar QUOTECHAR
                         CSV quote character
+  -t, --headers         Include headers
 ```
