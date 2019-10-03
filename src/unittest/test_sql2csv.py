@@ -121,27 +121,54 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(cursor, psycopg2.extensions.cursor)
 
-    def test_run_query_mysql(self):
+    def test_execute_query_mysql(self):
         # Get database connection
         connection = self.get_connection(
             engine='mysql'
         )
 
         cursor = sql2csv.get_cursor(connection)
+        sql2csv.execute_query(cursor=cursor, query='SELECT 1;')
 
-        for row in sql2csv.run_query(cursor=cursor, query='SELECT 1;'):
+        for row in sql2csv.fetch_rows(cursor=cursor):
             self.assertIsInstance(row, tuple)
 
-    def test_run_query_postgresql(self):
+    def test_execute_query_postgresql(self):
         # Get database connection
         connection = self.get_connection(
             engine='postgresql'
         )
 
         cursor = sql2csv.get_cursor(connection)
+        sql2csv.execute_query(
+            cursor=cursor, query='SELECT generate_series(1, 5);')
 
-        for row in sql2csv.run_query(cursor=cursor, query='SELECT generate_series(1, 5);'):
+        for row in sql2csv.fetch_rows(cursor=cursor):
             self.assertIsInstance(row, tuple)
+
+    def test_fetch_headers_mysql(self):
+        # Get database connection
+        connection = self.get_connection(
+            engine='mysql'
+        )
+
+        cursor = sql2csv.get_cursor(connection)
+        sql2csv.execute_query(
+            cursor=cursor, query='SELECT 1 as column1, 2 as column2;')
+
+        assert sql2csv.fetch_headers(cursor=cursor) == ['column1', 'column2']
+
+    def test_fetch_headers_postgresql(self):
+        # Get database connection
+        connection = self.get_connection(
+            engine='postgresql'
+        )
+
+        cursor = sql2csv.get_cursor(connection)
+        sql2csv.execute_query(
+            cursor=cursor, query='SELECT 1 as column1, 2 as column2;')
+
+        assert sql2csv.fetch_headers(cursor=cursor) == ['column1', 'column2']
 
     def test_discard_line(self):
         assert sql2csv.discard_line('+something') is True
@@ -268,6 +295,35 @@ class Test(unittest.TestCase):
             content = content_file.read()
 
         assert content == """1,12,hello world,2018-12-01 12:23:12
+2,15,hello,2018-12-05 12:18:12
+3,18,world,2018-12-08 12:17:12
+"""
+
+    def test_query_to_csv_mysql_headers(self):
+        db_config = self.db_configs['mysql']
+
+        dest_file = '/tmp/file2'
+
+        sql2csv.query_to_csv(
+            engine='mysql',
+            host=db_config['host'],
+            user=db_config['user'],
+            port=db_config['port'],
+            password=db_config['password'],
+            database=db_config['db'],
+            query='SELECT * FROM some_mysql_table',
+            headers=True,
+            out_type='file',
+            destination_file=dest_file,
+            print_info=2
+        )
+
+        # Read file
+        with open(dest_file, 'r') as content_file:
+            content = content_file.read()
+
+        assert content == """id,some_int,some_str,some_date
+1,12,hello world,2018-12-01 12:23:12
 2,15,hello,2018-12-05 12:18:12
 3,18,world,2018-12-08 12:17:12
 """

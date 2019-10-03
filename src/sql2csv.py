@@ -64,13 +64,23 @@ def get_cursor(connection):
     return connection.cursor()
 
 
-def run_query(cursor, query):
+def execute_query(cursor, query):
     """ Run a query and yield each row """
 
     cursor.execute(query)
 
+
+def fetch_rows(cursor):
+    """ Fetch and yield rows """
+
     for row in cursor.fetchall():
         yield row
+
+
+def fetch_headers(cursor):
+    """ Return list of headers """
+
+    return [i[0] for i in cursor.description]
 
 
 def discard_line(line):
@@ -200,7 +210,7 @@ def stdin_to_csv(delimiter=',', quotechar='"'):
     file_to_stdout()
 
 
-def query_to_csv(engine, host, user, port, password, database, query, out_type='stdout', destination_file=None, delimiter=',', quotechar='"', print_info=1000):
+def query_to_csv(engine, host, user, port, password, database, query, headers=False, out_type='stdout', destination_file=None, delimiter=',', quotechar='"', print_info=1000):
     """ Run a query and store the result to a CSV file """
 
     # Get SQL connection
@@ -220,9 +230,16 @@ def query_to_csv(engine, host, user, port, password, database, query, out_type='
     with open_tempfile() if out_type == 'stdout' else open_file(resolve_home_dir(destination_file)) as file_:
         writer = get_writer(file_, delimiter=delimiter, quotechar=quotechar)
 
-        # Run query and write rows to CSV
+        # Execute query
+        execute_query(cursor=cursor, query=query)
+
+        # Write headers if requested
+        if headers:
+            writer.writerow(fetch_headers(cursor=cursor))
+
+        # Write rows to CSV
         i = 0
-        for row in run_query(cursor=cursor, query=query):
+        for row in fetch_rows(cursor=cursor):
             # Increment row counter
             i += 1
 
@@ -279,6 +296,8 @@ def main():
     parser.add_argument("-D", "--delimiter", help="CSV delimiter", default=',')
     parser.add_argument("-Q", "--quotechar",
                         help="CSV quote character", default='"')
+    parser.add_argument("-t", "--headers", action='store_true',
+                        help="Include headers")
     args = parser.parse_args()
 
     # Set default port
@@ -300,6 +319,7 @@ def main():
         password=args.password,
         database=args.database,
         query=args.query,
+        headers=args.headers,
         out_type=args.out,
         destination_file=args.destination_file,
         delimiter=args.delimiter,
