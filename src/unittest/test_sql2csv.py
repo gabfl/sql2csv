@@ -121,27 +121,54 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(cursor, psycopg2.extensions.cursor)
 
-    def test_run_query_mysql(self):
+    def test_execute_query_mysql(self):
         # Get database connection
         connection = self.get_connection(
             engine='mysql'
         )
 
         cursor = sql2csv.get_cursor(connection)
+        sql2csv.execute_query(cursor=cursor, query='SELECT 1;')
 
-        for row in sql2csv.run_query(cursor=cursor, query='SELECT 1;'):
+        for row in sql2csv.fetch_rows(cursor=cursor):
             self.assertIsInstance(row, tuple)
 
-    def test_run_query_postgresql(self):
+    def test_execute_query_postgresql(self):
         # Get database connection
         connection = self.get_connection(
             engine='postgresql'
         )
 
         cursor = sql2csv.get_cursor(connection)
+        sql2csv.execute_query(
+            cursor=cursor, query='SELECT generate_series(1, 5);')
 
-        for row in sql2csv.run_query(cursor=cursor, query='SELECT generate_series(1, 5);'):
+        for row in sql2csv.fetch_rows(cursor=cursor):
             self.assertIsInstance(row, tuple)
+
+    def test_fetch_headers_mysql(self):
+        # Get database connection
+        connection = self.get_connection(
+            engine='mysql'
+        )
+
+        cursor = sql2csv.get_cursor(connection)
+        sql2csv.execute_query(
+            cursor=cursor, query='SELECT 1 as column1, 2 as column2;')
+
+        assert sql2csv.fetch_headers == ['column1', 'column2']
+
+    def test_fetch_headers_postgresql(self):
+        # Get database connection
+        connection = self.get_connection(
+            engine='postgresql'
+        )
+
+        cursor = sql2csv.get_cursor(connection)
+        sql2csv.execute_query(
+            cursor=cursor, query='SELECT 1 as column1, 2 as column2;')
+
+        assert sql2csv.fetch_headers == ['column1', 'column2']
 
     def test_discard_line(self):
         assert sql2csv.discard_line('+something') is True
