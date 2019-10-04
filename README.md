@@ -70,6 +70,7 @@ $ sql2csv --engine mysql \
 $ sql2csv --engine mysql \
   --database my_db --user root --password "secret" \
   --query "SELECT * FROM some_mysql_table" \
+  --headers \
   --out file --destination_file export.csv
 
 # * Exporting rows...
@@ -77,6 +78,7 @@ $ sql2csv --engine mysql \
 # * The result has been exported to export.csv.
 
 $ cat export.csv 
+id,some_int,some_str,some_date
 1,12,hello world,2018-12-01 12:23:12
 2,15,hello,2018-12-05 12:18:12
 3,18,world,2018-12-08 12:17:12
