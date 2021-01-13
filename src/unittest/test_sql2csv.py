@@ -199,6 +199,15 @@ class Test(unittest.TestCase):
         assert sql2csv.strip_whitespaces(
             ['  some  ', '  thing', 'else  ']) == ['some', 'thing', 'else']
 
+    def test_stringify_items(self):
+        # No change expected
+        assert sql2csv.stringify_items(
+            (1, 2, 'a', 'b', 'c')) == (1, 2, 'a', 'b', 'c')
+
+        # Json encoding of dict is expected
+        assert sql2csv.stringify_items((1, 2, {'a': True, 'b': False, 'c': 'some string'})) == (
+            1, 2, '{"a": true, "b": false, "c": "some string"}')
+
     @patch('sys.stdin.isatty')
     def test_has_stdin_input(self, mocked):
         mocked.return_value = True

@@ -4,6 +4,7 @@ import sys
 import csv
 import tempfile
 from os.path import expanduser
+import json
 
 import argparse
 import pymysql.cursors
@@ -15,9 +16,7 @@ file_ = None
 
 
 def get_mysql_connection(host, user, port, password, database):
-    """
-        MySQL connection
-    """
+    """ MySQL connection """
 
     return pymysql.connect(host=host,
                            user=user,
@@ -30,9 +29,7 @@ def get_mysql_connection(host, user, port, password, database):
 
 
 def get_pg_connection(host, user, port, password, database):
-    """
-        PostgreSQL connection
-    """
+    """ PostgreSQL connection """
 
     return psycopg2.connect(host=host,
                             user=user,
@@ -43,9 +40,7 @@ def get_pg_connection(host, user, port, password, database):
 
 
 def get_connection(engine, host, user, port, password, database):
-    """
-        Get SQL connection
-    """
+    """ Get SQL connection """
 
     if engine == 'mysql':
         return get_mysql_connection(host, user, port, password, database)
@@ -57,9 +52,7 @@ def get_connection(engine, host, user, port, password, database):
 
 
 def get_cursor(connection):
-    """
-        Return connection cursor
-    """
+    """ Return connection cursor """
 
     return connection.cursor()
 
@@ -84,7 +77,7 @@ def fetch_headers(cursor):
 
 
 def discard_line(line):
-    """ Decide whether we should keep or dicard a line """
+    """ Decide whether we should keep or discard a line """
 
     if line[:1] in ['', '+', '(', '-']:
         return True
@@ -118,6 +111,17 @@ def strip_whitespaces(tpl):
     """ Strip white spaces before and after each item """
 
     return [item.strip() for item in tpl]
+
+
+def stringify_items(row):
+    """ Loop thru each item and Json-encode dicts """
+
+    row = list(row)
+    for k, item in enumerate(row):
+        if(isinstance(item, dict)):
+            row[k] = json.dumps(item)
+
+    return tuple(row)
 
 
 def has_stdin_input():
@@ -245,6 +249,8 @@ def query_to_csv(engine, host, user, port, password, database, query, headers=Fa
 
             if out_type == 'file' and i % print_info == 0:
                 print('  ...%s rows written' % "{:,}".format(i))
+
+            row = stringify_items(row)
 
             writer.writerow(row)
 
