@@ -8,7 +8,7 @@ except(IOError, ImportError):
 
 setup(
     name='sql2csv',
-    version='1.2',
+    version='1.3',
     description='Run MySQL and PostgreSQL queries and store result in CSV',
     long_description=long_description,
     author='Gabriel Bordeaux',
