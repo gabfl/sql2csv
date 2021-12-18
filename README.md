@@ -1,7 +1,7 @@
 # sql2csv
 
 [![Pypi](https://img.shields.io/pypi/v/sql2csv.svg)](https://pypi.org/project/sql2csv)
-[![Build Status](https://travis-ci.org/gabfl/sql2csv.svg?branch=main)](https://travis-ci.org/gabfl/sql2csv)
+[![Build Status](https://github.com/gabfl/sql2csv/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gabfl/sql2csv/actions)
 [![codecov](https://codecov.io/gh/gabfl/sql2csv/branch/main/graph/badge.svg)](https://codecov.io/gh/gabfl/sql2csv)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://raw.githubusercontent.com/gabfl/sql2csv/main/LICENSE)
 

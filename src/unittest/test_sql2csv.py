@@ -18,16 +18,16 @@ class Test(unittest.TestCase):
             'engine': 'mysql',
             'host': 'localhost',
             'port': 3306,
-            'user': 'travis',
-            'password': '',
+            'user': 'root',
+            'password': 'root',
             'db': 'my_db'
         },
         'pg': {
             'engine': 'postgresql',
             'host': 'localhost',
             'port': 5432,
-            'user': 'postgres',
-            'password': '',
+            'user': 'db_user',
+            'password': 'db_password',
             'db': 'my_db'
         }
     }
