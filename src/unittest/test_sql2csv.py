@@ -18,16 +18,16 @@ class Test(unittest.TestCase):
             'engine': 'mysql',
             'host': 'localhost',
             'port': 3306,
-            'user': 'travis',
-            'password': '',
+            'user': 'root',
+            'password': 'root',
             'db': 'my_db'
         },
         'pg': {
             'engine': 'postgresql',
             'host': 'localhost',
             'port': 5432,
-            'user': 'postgres',
-            'password': '',
+            'user': 'db_user',
+            'password': 'db_password',
             'db': 'my_db'
         }
     }
@@ -220,7 +220,7 @@ class Test(unittest.TestCase):
 
     def test_resolve_home_dir(self):
         assert sql2csv.resolve_home_dir('/tmp/file') == '/tmp/file'
-        assert sql2csv.resolve_home_dir('~/file') == '/home/travis/file'
+        assert sql2csv.resolve_home_dir('~/file') == '/home/runner/file'
 
     def test_open_file(self):
         self.assertIsInstance(sql2csv.open_file(

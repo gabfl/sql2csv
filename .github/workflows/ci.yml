@@ -1,0 +1,59 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.8', '3.9']
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Set up MySQL
+        run: |
+          sudo systemctl start mysql.service
+          mysql -e 'CREATE DATABASE my_db;' -uroot -proot
+      - name: Import MySQL schemas
+        run: |
+          mysql my_db -uroot -proot < schema/mysql.sql
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          pg_isready
+      - name: Create PostgreSQL user
+        run: |
+          sudo -u postgres psql --command="CREATE USER db_user PASSWORD 'db_password'" --command="\du"
+      - name: Create PostgreSQL database
+        run: |
+          sudo -u postgres createdb --owner=db_user my_db
+      - name: Import PostgreSQL schema
+        run: |
+          psql -h localhost -f schema/postgresql.sql -d my_db -U db_user
+        env:
+          PGPASSWORD: db_password
+      - name: Install dependencies
+        run: |
+          pip install -U pip
+          pip install pycodestyle codecov pytest
+          python setup.py install
+      - name: Run pycodestyle
+        run: |
+          pycodestyle --exclude=venv --ignore=E501 .
+      - name: Run pytest
+        run: |
+          coverage run --source=. -m pytest
+      - name: Generate coverage report
+        run: |
+          coverage report -m
+      - name: Report to codecov
+        run: |
+          codecov
