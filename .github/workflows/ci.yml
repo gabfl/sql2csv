@@ -40,10 +40,14 @@ jobs:
           psql -h localhost -f schema/postgresql.sql -d my_db -U db_user
         env:
           PGPASSWORD: db_password
+      - name: Install deb dependencies
+        run: |
+          sudo apt update
+          sudo apt install pandoc
       - name: Install dependencies
         run: |
           pip install -U pip
-          pip install pycodestyle coverage pytest
+          pip install pycodestyle coverage pytest pypandoc
           python setup.py install
       - name: Run pycodestyle
         run: |
