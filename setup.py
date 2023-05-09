@@ -1,16 +1,12 @@
 from setuptools import setup
 
-try:
-    import pypandoc
-    long_description = pypandoc.convert_file('README.md', 'rst')
-except(IOError, ImportError):
-    long_description = open('README.md').read()
+import pypandoc
 
 setup(
     name='sql2csv',
     version='1.3',
     description='Run MySQL and PostgreSQL queries and store result in CSV',
-    long_description=long_description,
+    long_description=pypandoc.convert_file('README.md', 'rst'),
     author='Gabriel Bordeaux',
     author_email='pypi@gab.lc',
     url='https://github.com/gabfl/sql2csv',
