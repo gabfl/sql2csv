@@ -183,8 +183,8 @@ class Test(unittest.TestCase):
         assert sql2csv.remove_leading_trailing_pipe('something') == 'something'
 
     def test_get_column_separator(self):
-        assert(sql2csv.get_column_separator('some|value|is\nseparated')) == '|'
-        assert(sql2csv.get_column_separator(
+        assert (sql2csv.get_column_separator('some|value|is\nseparated')) == '|'
+        assert (sql2csv.get_column_separator(
             'some\tvalue\tis|separated')) == '\t'
 
     def test_split_columns(self):
