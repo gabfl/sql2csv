@@ -118,7 +118,7 @@ def stringify_items(row):
 
     row = list(row)
     for k, item in enumerate(row):
-        if(isinstance(item, dict)):
+        if (isinstance(item, dict)):
             row[k] = json.dumps(item)
 
     return tuple(row)
