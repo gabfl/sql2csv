@@ -66,8 +66,9 @@ def execute_query(cursor, query):
 def fetch_rows(cursor):
     """ Fetch and yield rows """
 
-    for row in cursor.fetchall():
-        yield row
+    while(rows = cursor.fetchmany(10000)):
+        for row in rows:
+            yield row
 
 
 def fetch_headers(cursor):
