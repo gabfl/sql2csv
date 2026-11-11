@@ -1,0 +1,18 @@
+codecov:
+  require_ci_to_pass: true
+  notify:
+    # CI uploads a single coverage report (from the Python 3.14 job)
+    after_n_builds: 1
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: auto
+
+comment:
+  after_n_builds: 1
