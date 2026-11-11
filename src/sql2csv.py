@@ -3,6 +3,7 @@
 import sys
 import csv
 import tempfile
+import os
 from os.path import expanduser
 import json
 
@@ -22,7 +23,7 @@ def get_mysql_connection(host, user, port, password, database):
                            user=user,
                            port=port,
                            password=password,
-                           db=database,
+                           database=database,
                            charset='utf8mb4',
                            client_flag=pymysql.constants.CLIENT.MULTI_STATEMENTS
                            )
@@ -173,11 +174,15 @@ def get_writer(file_, delimiter=',', quotechar='"'):
     )
 
 
-def file_to_stdout():
+def file_to_stdout(remove=False):
     """ Print file content to stdout """
 
     with open(file_.name) as f:
         print(f.read())
+
+    # Remove the temporary file once it has been printed
+    if remove:
+        os.remove(file_.name)
 
 
 def stdin_to_csv(delimiter=',', quotechar='"'):
@@ -190,8 +195,6 @@ def stdin_to_csv(delimiter=',', quotechar='"'):
         # Parse lines and add to file
         separator = None
         for line in sys.stdin:
-            # Strip whitespaces
-            line.strip()
 
             if not discard_line(line):
                 # Get column separator
@@ -211,7 +214,7 @@ def stdin_to_csv(delimiter=',', quotechar='"'):
                     # Write row
                     writer.writerow(row)
 
-    file_to_stdout()
+    file_to_stdout(remove=True)
 
 
 def query_to_csv(engine, host, user, port, password, database, query, headers=False, out_type='stdout', destination_file=None, delimiter=',', quotechar='"', print_info=1000):
@@ -261,7 +264,7 @@ def query_to_csv(engine, host, user, port, password, database, query, headers=Fa
 
     # Print stdout
     if out_type == 'stdout':
-        file_to_stdout()
+        file_to_stdout(remove=True)
 
 
 def main():
