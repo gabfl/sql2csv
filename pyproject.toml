@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sql2csv"
+version = "1.4"
+description = "Run MySQL and PostgreSQL queries and store result in CSV"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Gabriel Bordeaux", email = "pypi@gab.lc" }]
+requires-python = ">=3.10"
+dependencies = [
+    "PyMySQL>=1.1",
+    "psycopg2-binary>=2.9.10",
+]
+classifiers = [
+    "Topic :: Database",
+    "Topic :: Database :: Database Engines/Servers",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Development Status :: 4 - Beta",
+]
+
+[project.urls]
+Homepage = "https://github.com/gabfl/sql2csv"
+
+[project.scripts]
+sql2csv = "sql2csv.sql2csv:main"
+
+[tool.setuptools]
+packages = ["sql2csv"]
+package-dir = { "sql2csv" = "src" }

@@ -1,7 +1,9 @@
 import unittest
 import _io
+import os
 import tempfile
 import sys
+from os.path import expanduser
 from unittest.mock import patch
 from io import StringIO
 
@@ -39,7 +41,7 @@ class Test(unittest.TestCase):
         ]
 
         # Get database connection
-        return sql2csv.get_connection(
+        connection = sql2csv.get_connection(
             engine=engine,
             host=db_config['host'],
             user=db_config['user'],
@@ -47,6 +49,14 @@ class Test(unittest.TestCase):
             password=db_config['password'],
             database=db_config['db']
         )
+        self.addCleanup(connection.close)
+
+        return connection
+
+    def setUp(self):
+        tmp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp_dir.cleanup)
+        self.tmp_dir = tmp_dir.name
 
     def test_get_mysql_connection(self):
         db_config = self.db_configs['mysql']
@@ -54,6 +64,7 @@ class Test(unittest.TestCase):
         # Get database connection
         connection = sql2csv.get_mysql_connection(
             db_config['host'], db_config['user'], db_config['port'], db_config['password'], db_config['db'])
+        self.addCleanup(connection.close)
 
         self.assertIsInstance(connection, pymysql.connections.Connection)
 
@@ -68,6 +79,7 @@ class Test(unittest.TestCase):
             password=db_config['password'],
             database=db_config['db']
         )
+        self.addCleanup(connection.close)
 
         self.assertIsInstance(connection, psycopg2.extensions.connection)
 
@@ -101,7 +113,7 @@ class Test(unittest.TestCase):
             database=db_config['db']
         )
 
-    def get_cursor_mysql(self):
+    def test_get_cursor_mysql(self):
         # Get database connection
         connection = self.get_connection(
             engine='mysql'
@@ -111,7 +123,7 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(cursor, pymysql.cursors.Cursor)
 
-    def get_cursor_postgresql(self):
+    def test_get_cursor_postgresql(self):
         # Get database connection
         connection = self.get_connection(
             engine='postgresql'
@@ -220,21 +232,26 @@ class Test(unittest.TestCase):
 
     def test_resolve_home_dir(self):
         assert sql2csv.resolve_home_dir('/tmp/file') == '/tmp/file'
-        assert sql2csv.resolve_home_dir('~/file') == '/home/runner/file'
+        assert sql2csv.resolve_home_dir('~/file') == expanduser('~') + '/file'
 
     def test_open_file(self):
-        self.assertIsInstance(sql2csv.open_file(
-            '/tmp/file1'), _io.TextIOWrapper)
+        with sql2csv.open_file(os.path.join(self.tmp_dir, 'file1')) as file_:
+            self.assertIsInstance(file_, _io.TextIOWrapper)
 
     def test_open_tempfile(self):
-        self.assertIsInstance(sql2csv.open_tempfile(),
-                              tempfile._TemporaryFileWrapper)
+        with sql2csv.open_tempfile() as file_:
+            self.addCleanup(os.remove, file_.name)
+            self.assertIsInstance(file_, tempfile._TemporaryFileWrapper)
 
     def test_get_writer(self):
-        file_ = sql2csv.open_tempfile()
-        writer = sql2csv.get_writer(file_)
+        with sql2csv.open_tempfile() as file_:
+            self.addCleanup(os.remove, file_.name)
+            writer = sql2csv.get_writer(file_, delimiter=';')
+            writer.writerow(['a', 'b;c'])
+            file_.flush()
 
-        self.assertIsInstance(writer, object)
+            with open(file_.name) as f:
+                assert f.read() == 'a;"b;c"\n'
 
     def test_file_to_stdout(self):
         with tempfile.NamedTemporaryFile(mode='w+', newline='') as file_:
@@ -273,7 +290,6 @@ class Test(unittest.TestCase):
                 sql2csv.stdin_to_csv()
 
                 output = out.getvalue().strip()
-                print(output)
                 assert output == """id,some_int,some_str,some_date
 1,12,hello world,2018-12-01 12:23:12
 2,15,hello,2018-12-05 12:18:12
@@ -284,7 +300,7 @@ class Test(unittest.TestCase):
     def test_query_to_csv_mysql(self):
         db_config = self.db_configs['mysql']
 
-        dest_file = '/tmp/file2'
+        dest_file = os.path.join(self.tmp_dir, 'file2.csv')
 
         sql2csv.query_to_csv(
             engine='mysql',
@@ -311,7 +327,7 @@ class Test(unittest.TestCase):
     def test_query_to_csv_mysql_headers(self):
         db_config = self.db_configs['mysql']
 
-        dest_file = '/tmp/file2'
+        dest_file = os.path.join(self.tmp_dir, 'file2.csv')
 
         sql2csv.query_to_csv(
             engine='mysql',
@@ -340,7 +356,7 @@ class Test(unittest.TestCase):
     def test_query_to_csv_postgresql(self):
         db_config = self.db_configs['pg']
 
-        dest_file = '/tmp/file2'
+        dest_file = os.path.join(self.tmp_dir, 'file2.csv')
 
         sql2csv.query_to_csv(
             engine='postgresql',
@@ -390,3 +406,73 @@ class Test(unittest.TestCase):
 3,18,world,2018-12-08 12:17:12"""
         finally:
             sys.stdout = saved_stdout
+
+    def test_file_to_stdout_remove(self):
+        path = os.path.join(self.tmp_dir, 'file3')
+        with open(path, 'w') as f:
+            f.write('some line')
+
+        with patch('sys.stdout', new_callable=StringIO) as out:
+            with open(path) as file_:
+                sql2csv.file_ = file_
+                sql2csv.file_to_stdout(remove=True)
+
+        assert out.getvalue().strip() == 'some line'
+        assert not os.path.exists(path)
+
+    def test_main_stdin(self):
+        with patch('sys.stdin', StringIO("a\tb\n1\t2\n")), \
+                patch('sys.argv', ['sql2csv', '-D', ';']), \
+                patch('sys.stdout', new_callable=StringIO) as out:
+            sql2csv.main()
+
+        assert out.getvalue().strip() == 'a;b\n1;2'
+
+    @patch.object(sql2csv, 'has_stdin_input', return_value=False)
+    @patch.object(sql2csv, 'query_to_csv')
+    def test_main_args_mysql(self, mocked_query_to_csv, mocked_stdin):
+        with patch('sys.argv', ['sql2csv', '-u', 'root', '-d', 'my_db',
+                                '-q', 'SELECT 1']):
+            sql2csv.main()
+
+        mocked_query_to_csv.assert_called_once_with(
+            engine='mysql', host='127.0.0.1', user='root', port=3306,
+            password='', database='my_db', query='SELECT 1', headers=False,
+            out_type='stdout', destination_file=None, delimiter=',',
+            quotechar='"'
+        )
+
+    @patch.object(sql2csv, 'has_stdin_input', return_value=False)
+    @patch.object(sql2csv, 'query_to_csv')
+    def test_main_args_postgresql_file(self, mocked_query_to_csv, mocked_stdin):
+        with patch('sys.argv', ['sql2csv', '-e', 'postgresql', '-u', 'db_user',
+                                '-d', 'my_db', '-q', 'SELECT 1', '-t',
+                                '-f', 'out.csv']):
+            sql2csv.main()
+
+        kwargs = mocked_query_to_csv.call_args.kwargs
+        assert kwargs['engine'] == 'postgresql'
+        assert kwargs['port'] == 5432
+        assert kwargs['headers'] is True
+        assert kwargs['out_type'] == 'file'
+        assert kwargs['destination_file'] == 'out.csv'
+
+    def test_query_to_csv_postgresql_json(self):
+        db_config = self.db_configs['pg']
+        dest_file = os.path.join(self.tmp_dir, 'file4.csv')
+
+        sql2csv.query_to_csv(
+            engine='postgresql',
+            host=db_config['host'],
+            user=db_config['user'],
+            port=db_config['port'],
+            password=db_config['password'],
+            database=db_config['db'],
+            query="""SELECT 1 AS id, '{"a": 1}'::jsonb AS data""",
+            headers=True,
+            out_type='file',
+            destination_file=dest_file
+        )
+
+        with open(dest_file, 'r', newline='') as content_file:
+            assert content_file.read() == 'id,data\r\n1,"{""a"": 1}"\r\n'
